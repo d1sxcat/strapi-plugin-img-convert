@@ -1,6 +1,13 @@
 {
-  "version": "1.0.0",
-  "keywords": [],
+  "version": "1.0.1",
+  "keywords": [
+    "strapi",
+    "strapi-plugin",
+    "webp",
+    "avif",
+    "converter",
+    "image"
+  ],
   "type": "commonjs",
   "exports": {
     "./package.json": "./package.json",
@@ -61,10 +68,10 @@
     "kind": "plugin",
     "name": "strapi-plugin-img-convert",
     "displayName": "Image Converter",
-    "description": "Converts media uploads to webp, avif"
+    "description": "Converts media uploads to webp or avif"
   },
   "name": "strapi-plugin-img-convert",
-  "description": "Converts media uploads to webp, avif",
+  "description": "Converts media uploads to webp or avif",
   "license": "MIT",
   "repository": {
     "type": "git",
