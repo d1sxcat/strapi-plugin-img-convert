@@ -1,0 +1,16 @@
+{
+  "plugin.name": "Image Convert",
+  "page.title": "Paramètres - Image Convert",
+  "settings.header.label": "Image Convert",
+  "settings.sub-header.label": "Configurez les paramètres du plugin Image Convert",
+  "settings.blockTitle": "Sélectionner le format de sortie / Désactiver le plugin",
+  "settings.form.outputFormat.description": "Sélectionnez le format de sortie pour la conversion d'image. Vous pouvez également désactiver le plugin. Note : Les formats AVIF ne sont pas redimensionnés",
+  "settings.form.ouputFormat.label": "Format de sortie",
+  "settings.blockTitle.options": "Activer/désactiver les formats d'entrée pour la conversion",
+  "settings.form.jpeg.description": "Activez cette option pour convertir les images JPEG au format sélectionné.",
+  "settings.form.jpeg.label": "Convertir les images JPEG",
+  "settings.form.png.description": "Activez cette option pour convertir les images PNG au format sélectionné.",
+  "settings.form.png.label": "Convertir les images PNG",
+  "settings.form.tiff.description": "Activez cette option pour convertir les images TIFF au format sélectionné.",
+  "settings.form.tiff.label": "Convertir les images TIFF"
+}
