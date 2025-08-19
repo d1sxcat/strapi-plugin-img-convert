@@ -25,9 +25,6 @@ yarn add strapi-plugin-img-convert
 - Convert images to WebP or AVIF
 - Configure conversion settings through Strapi admin interface
 - Automatic conversion on image upload
-- Maintain original image alongside converted versions
-- Configurable quality settings per format
-- Support for bulk conversion of existing images
 
 ## Usage
 
@@ -38,7 +35,7 @@ yarn add strapi-plugin-img-convert
 
 ## Support
 
-For issues and feature requests, please [create an issue](https://github.com/yourusername/strapi-plugin-img-convert/issues) on our GitHub repository.
+For issues and feature requests, please [create an issue](https://github.com/d1sxcat/strapi-plugin-img-convert/issues) on our GitHub repository.
 
 ## License
 
