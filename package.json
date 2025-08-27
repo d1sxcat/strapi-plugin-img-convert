@@ -1,5 +1,5 @@
 {
-  "version": "1.0.6",
+  "version": "1.0.7",
   "keywords": [
     "strapi",
     "strapi-plugin",
@@ -61,8 +61,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.1",
-    "styled-components": "^6.1.19",
-    "sharp": "*"
+    "styled-components": "^6.1.19"
   },
   "strapi": {
     "kind": "plugin",
