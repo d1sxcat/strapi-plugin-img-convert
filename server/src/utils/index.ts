@@ -1,11 +1,16 @@
-import type Settings from '../services/settings';
-import type imgConvert from '../services/img-convert';
+import type { Settings, Breakpoints } from './types';
 
-type Services = {
-  settings: ReturnType<typeof Settings>;
-  'img-convert': ReturnType<typeof imgConvert>;
-};
+export const DEFAULT_BREAKPOINTS = {
+  large: { breakpoint: 1000, formats: ['webp', 'jpeg'] },
+  medium: { breakpoint: 750, formats: ['webp', 'jpeg'] },
+  small: { breakpoint: 500, formats: ['webp', 'jpeg'] },
+} satisfies Breakpoints;
 
-export const getService = <TName extends keyof Services>(name: TName): Services[TName] => {
-  return strapi.plugin('strapi-plugin-img-convert').service<Services[TName]>(name);
-};
+export const getBreakpoints = () =>
+  strapi.config.get<Breakpoints>('plugin::upload.breakpoints', DEFAULT_BREAKPOINTS);
+
+export async function getSettings() {
+  const res = await strapi.store!({ type: 'plugin', name: 'upload', key: 'settings' }).get({});
+
+  return res as Settings | null;
+}

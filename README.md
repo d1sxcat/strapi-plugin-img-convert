@@ -1,10 +1,12 @@
 # strapi-plugin-img-convert
 
-A plugin for [Strapi](https://github.com/strapi/strapi) that automatically converts uploaded images to WebP and AVIF using the [sharp](https://sharp.pixelplumbing.com/) library. This plugin provides flexible image optimization through Strapi's admin interface, allowing you to manage your image conversion settings without code changes.
+A Strapi plugin that enhances the built-in upload functionality by automatically converting uploaded images into formats like WebP and AVIF. 
 
-### Supported Strapi versions
+## Requirements
 
-- v5.x.x
+- Strapi V5.x.x
+- Node.js 18.x or higher
+- Access to edit config/plugins.js|ts
 
 **NOTE**: Strapi 4.x.x is not supported!
 
@@ -20,18 +22,28 @@ npm install strapi-plugin-img-convert
 yarn add strapi-plugin-img-convert
 ```
 
-## Features
-
-- Convert images to WebP or AVIF
-- Configure conversion settings through Strapi admin interface
-- Automatic conversion on image upload
-
 ## Usage
 
 1. Install the plugin using npm or yarn
-2. The plugin will automatically appear in your Strapi admin panel
-3. Navigate to Settings > IMG Convert to configure your conversion preferences
-4. Upload images as normal - conversion happens automatically
+2. Configure the plugin by adding the following to your `config/plugins.js` file:
+
+```js
+module.exports = {
+  upload: {
+    enabled: true,
+    config: {
+      breakpoints: {
+        xlarge: { breakpoint: 1566, formats: ['webp', 'jpeg', 'png'] },
+        large: { breakpoint: 1280, formats: ['webp', 'jpeg', 'png'] },
+        medium: { breakpoint: 768, formats: ['webp', 'jpeg', 'png'] },
+        small: { breakpoint: 640, formats: ['webp', 'jpeg', 'png'] },
+      },
+    },
+  },
+};
+```
+
+> Note: Legacy configuration formats are still supported for backward compatibility.
 
 ## Support
 

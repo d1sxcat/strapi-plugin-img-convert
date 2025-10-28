@@ -11,13 +11,6 @@
   "type": "commonjs",
   "exports": {
     "./package.json": "./package.json",
-    "./strapi-admin": {
-      "types": "./dist/admin/src/index.d.ts",
-      "source": "./admin/src/index.ts",
-      "import": "./dist/admin/index.mjs",
-      "require": "./dist/admin/index.js",
-      "default": "./dist/admin/index.js"
-    },
     "./strapi-server": {
       "types": "./dist/server/src/index.d.ts",
       "source": "./server/src/index.ts",
@@ -35,43 +28,46 @@
     "watch:link": "strapi-plugin watch:link",
     "verify": "strapi-plugin verify",
     "test:ts:front": "run -T tsc -p admin/tsconfig.json",
-    "test:ts:back": "run -T tsc -p server/tsconfig.json"
+    "test:ts:back": "run -T tsc -p server/tsconfig.json",
+    "lint": "eslint --max-warnings=0"
   },
   "dependencies": {
-    "@strapi/design-system": "^2.0.0-rc.29",
-    "@strapi/icons": "^2.0.0-rc.29",
+    "@strapi/design-system": "^2.0.0-rc.30",
+    "@strapi/icons": "^2.0.0-rc.30",
     "react-intl": "^7.1.11"
   },
   "devDependencies": {
-    "@strapi/strapi": "^5.23.0",
+    "@repo/eslint-config": "*",
     "@strapi/sdk-plugin": "^5.3.2",
-    "prettier": "^3.6.2",
+    "@strapi/strapi": "^5.29.0",
+    "@strapi/typescript-utils": "^5.29.0",
+    "@types/react": "^16.8.0 || ^17.0.0 || ^18.0.0",
+    "@types/react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0",
+    "eslint": "^9.36.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.1",
     "styled-components": "^6.1.19",
-    "@types/react": "^19.1.10",
-    "@types/react-dom": "^19.1.7",
-    "@strapi/typescript-utils": "^5.23.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "yalc": "^1.0.0-pre.53"
   },
   "peerDependencies": {
-    "@strapi/strapi": "^5.23.0",
     "@strapi/sdk-plugin": "^5.3.2",
+    "@strapi/strapi": "^5.29.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.1",
-    "styled-components": "^6.1.19",
-    "sharp": "^0.33.0"
+    "sharp": "^0.33.0",
+    "styled-components": "^6.1.19"
   },
   "strapi": {
     "kind": "plugin",
-    "name": "strapi-plugin-img-convert",
+    "name": "img-convert",
     "displayName": "Image Converter",
-    "description": "Converts media uploads to webp or avif"
+    "description": "Converts media uploads to any sharp supported format such as webp or avif"
   },
   "name": "strapi-plugin-img-convert",
-  "description": "Converts media uploads to webp or avif",
+  "description": "Converts media uploads to any sharp supported format such as webp or avif",
   "license": "MIT",
   "repository": {
     "type": "git",

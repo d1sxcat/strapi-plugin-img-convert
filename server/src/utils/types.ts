@@ -1,72 +1,92 @@
-export type FileJSON
-  = Pick<
-    File,
-    'size' | 'filepath' | 'originalFilename' | 'mimetype' | 'hash' | 'newFilename'
-  > & {
-  length: number;
-  mimetype: string | null;
-  mtime: Date | null;
-}
+import type { File as FormidableFile } from 'formidable';
+import { yup } from '@strapi/utils';
+import { z } from 'zod';
 
-export type Files<U extends string = string> = {
-        readonly [Prop in U]?: File[];
-    };
+export const SUPPORTED_FORMATS = ['jpeg', 'webp', 'avif', 'png'] as const;
+export type SupportedFormat = typeof SUPPORTED_FORMATS[number];
 
-export type File = {
-  /**
-   * The size of the uploaded file in bytes. If the file is still being uploaded (see `'fileBegin'`
-   * event), this property says how many bytes of the file have been written to disk yet.
-   */
-  size: number;
+export const breakpointsSchema = z.record(
+  z.string(),
+  z.object({
+    breakpoint: z.number(),
+    formats: z.array(z.enum(SUPPORTED_FORMATS)),
+  }).or(z.number())
+);
 
-  /**
-   * The path this file is being written to. You can modify this in the `'fileBegin'` event in case
-   * you are unhappy with the way formidable generates a temporary path for your files.
-   */
-  filepath: string;
+export type Breakpoints = z.infer<typeof breakpointsSchema>;
 
-  /**
-   * The name this file had according to the uploading client.
-   */
-  originalFilename: string | null;
-
-  /**
-   * Calculated based on options provided
-   */
-  newFilename: string;
-
-  /**
-   * The mime type of this file, according to the uploading client.
-   */
-  mimetype: string | null;
-
-  /**
-   * A Date object (or `null`) containing the time this file was last written to. Mostly here for
-   * compatibility with the [W3C File API Draft](http://dev.w3.org/2006/webapi/FileAPI/).
-   */
-  mtime?: Date | null | undefined;
-
-  hashAlgorithm: false | 'sha1' | 'md5' | 'sha256';
-
-  /**
-   * If `options.hashAlgorithm` calculation was set, you can read the hex digest out of this var
-   * (at the end it will be a string).
-   */
-  hash?: string | null;
-
-  /**
-   * This method returns a JSON-representation of the file, allowing you to JSON.stringify() the
-   * file which is useful for logging and responding to requests.
-   *
-   * @link https://github.com/node-formidable/formidable#filetojson
-   */
-  toJSON(): FileJSON;
-
-  toString(): string;
+export type Dimensions = {
+  width: number | null;
+  height: number | null;
 };
 
-export type InputFile = File;
-export type InputFiles = Files;
+export type InputFile = FormidableFile & {
+  path?: string;
+  tmpWorkingDirectory?: string;
+};
+
+export interface File {
+  id: number;
+  name: string;
+  alternativeText?: string | null;
+  caption?: string | null;
+  width?: number;
+  height?: number;
+  formats?: Record<string, unknown>;
+  hash: string;
+  ext?: string;
+  mime?: string;
+  size?: number;
+  sizeInBytes?: number;
+  url?: string;
+  previewUrl?: string;
+  path?: string | null;
+  provider?: string;
+  provider_metadata?: Record<string, unknown>;
+  isUrlSigned?: boolean;
+  folder?: number;
+  folderPath?: string;
+  related?: {
+    id: string | number;
+    __type: string;
+    __pivot: { field: string };
+  }[];
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: number;
+  updatedBy?: number;
+}
+
+export interface Folder {
+  id: number;
+  name: string;
+  pathId: number;
+  /**
+   * parent id
+   */
+  parent?: number;
+  /**
+   * children ids
+   */
+  children?: number[];
+  path: string;
+  files?: File[];
+}
+
+export interface Config {
+  provider: string;
+  sizeLimit?: number;
+  providerOptions: Record<string, unknown>;
+  actionOptions: Record<string, unknown>;
+}
+
+export interface UploadableFile extends Omit<File, 'id'> {
+  filepath?: string;
+  getStream: () => NodeJS.ReadableStream;
+  stream?: NodeJS.ReadableStream;
+  buffer?: Buffer;
+  tmpWorkingDirectory?: string;
+}
 
 export type FileInfo = {
   name?: string | null;
@@ -75,9 +95,10 @@ export type FileInfo = {
   folder?: number;
 };
 
-export type FileConversionReturn = {
-  size: number;
-  filepath: string;
-  originalFilename: string;
-  mimetype: string;
-};
+export const settingsSchema = yup.object({
+  sizeOptimization: yup.boolean().required(),
+  responsiveDimensions: yup.boolean().required(),
+  autoOrientation: yup.boolean(),
+});
+
+export type Settings = yup.InferType<typeof settingsSchema>;

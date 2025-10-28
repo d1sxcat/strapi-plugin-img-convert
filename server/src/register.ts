@@ -1,15 +1,13 @@
 import type { Core } from '@strapi/strapi';
-import imgMiddleware from './middlewares/img-convert';
+import { generateResponsiveFormats } from './services/image-manipulation';
 
 const register = async ({ strapi }: { strapi: Core.Strapi }) => {
-  const apiRoutes = strapi.plugins['upload']?.routes;
-
-  if (!Array.isArray(apiRoutes)) {
-    apiRoutes?.['admin']?.routes
-      ?.filter((route) => route.handler === 'admin-upload.upload')
-      .map((route) => {
-        route.config.middlewares = [imgMiddleware, ...(route.config.middlewares || [])];
-      });
+  const services = strapi.plugins['upload']?.services;
+  if (!services) {
+    throw new Error('Upload plugin services not found');
+  }
+  if (services['image-manipulation']['generateResponsiveFormats']) {
+    services['image-manipulation']['generateResponsiveFormats'] = generateResponsiveFormats;
   }
 };
 
