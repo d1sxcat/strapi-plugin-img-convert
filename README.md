@@ -30,7 +30,6 @@ yarn add strapi-plugin-img-convert
 ```js
 module.exports = {
   upload: {
-    enabled: true,
     config: {
       breakpoints: {
         xlarge: { breakpoint: 1566, formats: ['webp', 'jpeg', 'png'] },
