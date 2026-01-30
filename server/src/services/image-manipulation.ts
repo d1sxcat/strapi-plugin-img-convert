@@ -3,11 +3,18 @@ import { join, parse } from 'path';
 import sharp from 'sharp';
 import { file as fileUtils } from '@strapi/utils';
 
-import { getBreakpoints, DEFAULT_BREAKPOINTS, getSettings } from '../utils';
+import { getBreakpoints, DEFAULT_BREAKPOINTS, getSettings, getOptimizeSettings, DEFAULT_OPTIONS } from '../utils';
 
-import { UploadableFile, Dimensions, Breakpoints, breakpointsSchema } from '../utils/types';
+import { UploadableFile, Dimensions, Breakpoints, breakpointsSchema, formatOptionsSchema } from '../utils/types';
 
 const { bytesToKbytes } = fileUtils;
+
+const FORMATS_TO_OPTIMIZE = ['jpeg', 'png', 'webp', 'tiff', 'avif'];
+
+const isOptimizableFormat = (
+  format: string | undefined
+): format is 'jpeg' | 'png' | 'webp' | 'tiff' | 'avif' =>
+  format !== undefined && FORMATS_TO_OPTIMIZE.includes(format);
 
 const writeStreamToFile = (stream: NodeJS.ReadWriteStream, path: string) =>
   new Promise((resolve, reject) => {
@@ -160,4 +167,72 @@ const generateBreakpoint = async (
 
 const breakpointSmallerThan = (breakpoint: number, { width, height }: Dimensions) => {
   return breakpoint < (width ?? 0) || breakpoint < (height ?? 0);
+};
+
+export const optimize = async (file: UploadableFile) => {
+  const { sizeOptimization = false, autoOrientation = false } =
+    await getSettings() ?? {};
+
+  const optimizeSettings = getOptimizeSettings();
+
+  const options = formatOptionsSchema.safeParse(optimizeSettings);
+  if (!options.success) {
+    strapi.log.error('Invalid optimize settings, using default settings');
+  }
+  const optimizeSettingsValidated = options.success
+    ? options.data
+    : DEFAULT_OPTIONS;
+  const { format, size } = await getMetadata(file);
+
+  if ((sizeOptimization || autoOrientation) && isOptimizableFormat(format)) {
+    let transformer;
+    if (!file.filepath) {
+      transformer = sharp();
+    } else {
+      transformer = sharp(file.filepath);
+    }
+    // reduce image quality
+    if (sizeOptimization) {
+      transformer[format](optimizeSettingsValidated[format]);
+    }
+    // rotate image based on EXIF data
+    if (autoOrientation) {
+      transformer.rotate();
+    }
+    const filePath = file.tmpWorkingDirectory
+      ? join(file.tmpWorkingDirectory, `optimized-${file.hash}`)
+      : `optimized-${file.hash}`;
+
+    let newInfo;
+    if (!file.filepath) {
+      transformer.on('info', (info) => {
+        newInfo = info;
+      });
+
+      await writeStreamToFile(file.getStream().pipe(transformer), filePath);
+    } else {
+      newInfo = await transformer.toFile(filePath);
+    }
+
+    const { width: newWidth, height: newHeight, size: newSize } = newInfo ?? {};
+
+    const newFile = { ...file };
+
+    newFile.getStream = () => fs.createReadStream(filePath);
+    newFile.filepath = filePath;
+
+    if (newSize && size && newSize > size) {
+      // Ignore optimization if output is bigger than original
+      return file;
+    }
+
+    return Object.assign(newFile, {
+      width: newWidth,
+      height: newHeight,
+      size: newSize ? bytesToKbytes(newSize) : 0,
+      sizeInBytes: newSize,
+    });
+  }
+
+  return file;
 };

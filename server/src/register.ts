@@ -1,5 +1,5 @@
 import type { Core } from '@strapi/strapi';
-import { generateResponsiveFormats } from './services/image-manipulation';
+import { generateResponsiveFormats, optimize } from './services/image-manipulation';
 
 const register = async ({ strapi }: { strapi: Core.Strapi }) => {
   const services = strapi.plugins['upload']?.services;
@@ -8,6 +8,9 @@ const register = async ({ strapi }: { strapi: Core.Strapi }) => {
   }
   if (services['image-manipulation']['generateResponsiveFormats']) {
     services['image-manipulation']['generateResponsiveFormats'] = generateResponsiveFormats;
+  }
+  if (services['image-manipulation']['optimize']) {
+    services['image-manipulation']['optimize'] = optimize;
   }
 };
 
