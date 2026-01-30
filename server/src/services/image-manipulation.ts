@@ -60,22 +60,25 @@ const resizeFileTo = async (
   const filePath = file.tmpWorkingDirectory ? join(file.tmpWorkingDirectory, hash) : hash;
   const originalFormat = (await getMetadata(file)).format;
   let newInfo;
+
+  const optimizeSettings = getOptimizeSettings();
+  const optimizeOptions = formatOptionsSchema.safeParse(optimizeSettings);
+  if (!optimizeOptions.success) {
+    strapi.log.error("Invalid optimize settings, using default settings");
+  }
+  const optimizeSettingsValidated = optimizeOptions.success ? optimizeOptions.data : DEFAULT_OPTIONS;
+
   if (!file.filepath) {
     const transform = sharp()
       .resize(options)
       .on('info', (info) => {
         newInfo = info;
       });
-
-    if (format && format !== originalFormat) {
-      transform.toFormat(format);
-    }
+    transform.toFormat(format ?? originalFormat, optimizeSettingsValidated[format ?? originalFormat]);
     await writeStreamToFile(file.getStream().pipe(transform), filePath);
   } else {
-    newInfo =
-      format && format !== originalFormat
-        ? await sharp(file.filepath).resize(options).toFormat(format).toFile(filePath)
-        : await sharp(file.filepath).resize(options).toFile(filePath);
+    newInfo =  
+      await sharp(file.filepath).resize(options).toFormat(format ?? originalFormat, optimizeSettingsValidated[format ?? originalFormat]).toFile(filePath);
   }
 
   const { width, height, size } = newInfo ?? {};
