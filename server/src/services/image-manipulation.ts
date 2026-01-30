@@ -205,7 +205,7 @@ const breakpointSmallerThan = (breakpoint: number, { width, height }: Dimensions
 };
 
 export const optimize = async (file: UploadableFile) => {
-  const { sizeOptimization = false, responsiveDimensions = false, autoOrientation = false } = (await getSettings()) ?? {};
+  const { sizeOptimization = false, autoOrientation = false } = (await getSettings()) ?? {};
 
   const { format, size } = await getMetadata(file);
 
@@ -216,7 +216,7 @@ export const optimize = async (file: UploadableFile) => {
     } else {
       transformer = sharp(file.filepath);
     }
-    if (sizeOptimization && !responsiveDimensions) {
+    if (sizeOptimization) {
       transformer[format](
         getOptimizeSettings()[format] ?? DEFAULT_OPTIONS[format]
       );
