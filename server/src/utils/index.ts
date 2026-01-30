@@ -11,6 +11,7 @@ export const DEFAULT_OPTIONS = {
   png: { quality: 80 },
   webp: { quality: 80 },
   avif: { quality: 80 },
+  tiff: { quality: 80 },
 } satisfies FormatOptions;
 
 export const getBreakpoints = () =>

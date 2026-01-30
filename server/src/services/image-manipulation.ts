@@ -3,9 +3,21 @@ import { join, parse } from 'path';
 import sharp from 'sharp';
 import { file as fileUtils } from '@strapi/utils';
 
-import { getBreakpoints, DEFAULT_BREAKPOINTS, getSettings, getOptimizeSettings, DEFAULT_OPTIONS } from '../utils';
+import {
+  getBreakpoints,
+  DEFAULT_BREAKPOINTS,
+  getSettings,
+  getOptimizeSettings,
+  DEFAULT_OPTIONS,
+} from '../utils';
 
-import { UploadableFile, Dimensions, Breakpoints, breakpointsSchema, formatOptionsSchema } from '../utils/types';
+import {
+  UploadableFile,
+  Dimensions,
+  Breakpoints,
+  breakpointsSchema,
+  formatOptionsSchema,
+} from '../utils/types';
 
 const { bytesToKbytes } = fileUtils;
 
@@ -55,30 +67,41 @@ const resizeFileTo = async (
     name: string;
     hash: string;
   },
-  format: keyof sharp.FormatEnum | null = null
+  format: keyof sharp.FormatEnum,
+  sizeOptimization: boolean
 ) => {
   const filePath = file.tmpWorkingDirectory ? join(file.tmpWorkingDirectory, hash) : hash;
-  const originalFormat = (await getMetadata(file)).format;
-  let newInfo;
-
   const optimizeSettings = getOptimizeSettings();
-  const optimizeOptions = formatOptionsSchema.safeParse(optimizeSettings);
-  if (!optimizeOptions.success) {
-    strapi.log.error("Invalid optimize settings, using default settings");
-  }
-  const optimizeSettingsValidated = optimizeOptions.success ? optimizeOptions.data : DEFAULT_OPTIONS;
 
+  const optimize = formatOptionsSchema.safeParse(optimizeSettings);
+  if (!optimize.success) {
+    strapi.log.info('Invalid optimize settings, using default settings');
+  }
+  const optimizeSettingsValidated = optimize.success ? optimize.data : DEFAULT_OPTIONS;
+  let newInfo;
   if (!file.filepath) {
     const transform = sharp()
+      .toFormat(
+        format,
+        sizeOptimization && isOptimizableFormat(format)
+          ? optimizeSettingsValidated[format]
+          : undefined
+      )
       .resize(options)
       .on('info', (info) => {
         newInfo = info;
       });
-    transform.toFormat(format ?? originalFormat, optimizeSettingsValidated[format ?? originalFormat]);
     await writeStreamToFile(file.getStream().pipe(transform), filePath);
   } else {
-    newInfo =  
-      await sharp(file.filepath).resize(options).toFormat(format ?? originalFormat, optimizeSettingsValidated[format ?? originalFormat]).toFile(filePath);
+    newInfo = await sharp(file.filepath)
+      .resize(options)
+      .toFormat(
+        format,
+        sizeOptimization && isOptimizableFormat(format)
+          ? optimizeSettingsValidated[format]
+          : undefined
+      )
+      .toFile(filePath);
   }
 
   const { width, height, size } = newInfo ?? {};
@@ -102,38 +125,45 @@ const resizeFileTo = async (
   return newFile;
 };
 
-const validatedBreakpoints = (
-  breakpoints: Breakpoints,
-) => {
+const validatedBreakpoints = (breakpoints: Breakpoints, originalFormat: keyof sharp.FormatEnum) => {
   const breakpointFormat = breakpointsSchema.safeParse(breakpoints).data ?? DEFAULT_BREAKPOINTS;
-  return Object.entries(breakpointFormat).reduce((acc, [key, value]) => {
-    if (typeof value === 'number') {
-      acc[key] = { breakpoint: value, format: null };
+  return Object.entries(breakpointFormat).reduce(
+    (acc, [key, value]) => {
+      if (typeof value === 'number') {
+        acc[key] = { breakpoint: value, format: originalFormat };
+        return acc;
+      }
+      for (const format of value.formats) {
+        acc[`${key}_${format}`] = { breakpoint: value.breakpoint, format };
+      }
+      acc[`${key}_${originalFormat}`] = { breakpoint: value.breakpoint, format: originalFormat };
       return acc;
-    }
-    for (const format of value.formats) {
-      acc[`${key}_${format}`] = { breakpoint: value.breakpoint, format};
-    }
-    return acc;
-  }, {} as Record<string, { breakpoint: number; format: keyof sharp.FormatEnum | null }>);
+    },
+    {} as Record<string, { breakpoint: number; format: keyof sharp.FormatEnum }>
+  );
 };
 
 export const generateResponsiveFormats = async (file: UploadableFile) => {
-  const { responsiveDimensions = false } = await getSettings();
+  const { sizeOptimization = false, responsiveDimensions = false } = await getSettings();
 
   if (!responsiveDimensions) return [];
 
   const originalDimensions = await getDimensions(file);
-  const breakpoints = validatedBreakpoints(getBreakpoints());
+  const metadata = await getMetadata(file);
+  const breakpoints = validatedBreakpoints(getBreakpoints(), metadata.format);
   return Promise.all(
     Object.entries(breakpoints).map(([key, value]) => {
       const { breakpoint, format } = value;
       if (breakpointSmallerThan(breakpoint, originalDimensions)) {
-        return generateBreakpoint(key, {
-          file,
-          breakpoint,
-          format,
-        });
+        return generateBreakpoint(
+          key,
+          {
+            file,
+            breakpoint,
+            format,
+          },
+          sizeOptimization
+        );
       }
 
       return undefined;
@@ -147,7 +177,8 @@ const generateBreakpoint = async (
     file,
     breakpoint,
     format,
-  }: { file: UploadableFile; breakpoint: number; format: keyof sharp.FormatEnum | null }
+  }: { file: UploadableFile; breakpoint: number; format: keyof sharp.FormatEnum | null },
+  sizeOptimization: boolean
 ) => {
   const newFile = await resizeFileTo(
     file,
@@ -160,7 +191,8 @@ const generateBreakpoint = async (
       name: `${key}_${file.name}`,
       hash: `${key}_${file.hash}`,
     },
-    format
+    format,
+    sizeOptimization
   );
   return {
     key,
@@ -173,18 +205,8 @@ const breakpointSmallerThan = (breakpoint: number, { width, height }: Dimensions
 };
 
 export const optimize = async (file: UploadableFile) => {
-  const { sizeOptimization = false, autoOrientation = false } =
-    await getSettings() ?? {};
+  const { sizeOptimization = false, responsiveDimensions = false, autoOrientation = false } = (await getSettings()) ?? {};
 
-  const optimizeSettings = getOptimizeSettings();
-
-  const options = formatOptionsSchema.safeParse(optimizeSettings);
-  if (!options.success) {
-    strapi.log.error('Invalid optimize settings, using default settings');
-  }
-  const optimizeSettingsValidated = options.success
-    ? options.data
-    : DEFAULT_OPTIONS;
   const { format, size } = await getMetadata(file);
 
   if ((sizeOptimization || autoOrientation) && isOptimizableFormat(format)) {
@@ -194,11 +216,11 @@ export const optimize = async (file: UploadableFile) => {
     } else {
       transformer = sharp(file.filepath);
     }
-    // reduce image quality
-    if (sizeOptimization) {
-      transformer[format](optimizeSettingsValidated[format]);
+    if (sizeOptimization && !responsiveDimensions) {
+      transformer[format](
+        getOptimizeSettings()[format] ?? DEFAULT_OPTIONS[format]
+      );
     }
-    // rotate image based on EXIF data
     if (autoOrientation) {
       transformer.rotate();
     }
