@@ -5,6 +5,11 @@ A Strapi plugin that enhances the built-in upload functionality by automatically
 ## New in version 2.1
 You can now pass sharp options for each image format. Check here for available options - https://sharp.pixelplumbing.com/api-output/
 
+## New in version 2.2
+The optimizeSettings are also applied to the generation of responsive images.
+
+Be warned that, if you have booth “optimize images” and “generate responsive images” active in the media library settings the “optimized image“ and not the original will be used to generate the responsive images.
+
 ## Requirements
 
 - Strapi V5.x.x
