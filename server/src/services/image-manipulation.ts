@@ -67,8 +67,7 @@ const resizeFileTo = async (
     name: string;
     hash: string;
   },
-  format: keyof sharp.FormatEnum,
-  sizeOptimization: boolean
+  format: keyof sharp.FormatEnum
 ) => {
   const filePath = file.tmpWorkingDirectory ? join(file.tmpWorkingDirectory, hash) : hash;
   const optimizeSettings = getOptimizeSettings();
@@ -83,8 +82,8 @@ const resizeFileTo = async (
     const transform = sharp()
       .toFormat(
         format,
-        sizeOptimization && isOptimizableFormat(format)
-          ? optimizeSettingsValidated[format]
+        isOptimizableFormat(format)
+          ? (optimizeSettingsValidated[format] ?? DEFAULT_OPTIONS[format])
           : undefined
       )
       .resize(options)
@@ -95,12 +94,7 @@ const resizeFileTo = async (
   } else {
     newInfo = await sharp(file.filepath)
       .resize(options)
-      .toFormat(
-        format,
-        sizeOptimization && isOptimizableFormat(format)
-          ? optimizeSettingsValidated[format]
-          : undefined
-      )
+      .toFormat(format, isOptimizableFormat(format) ? (optimizeSettingsValidated[format] ?? DEFAULT_OPTIONS[format]) : undefined)
       .toFile(filePath);
   }
 
@@ -144,7 +138,7 @@ const validatedBreakpoints = (breakpoints: Breakpoints, originalFormat: keyof sh
 };
 
 export const generateResponsiveFormats = async (file: UploadableFile) => {
-  const { sizeOptimization = false, responsiveDimensions = false } = await getSettings();
+  const { responsiveDimensions = false } = await getSettings();
 
   if (!responsiveDimensions) return [];
 
@@ -155,15 +149,11 @@ export const generateResponsiveFormats = async (file: UploadableFile) => {
     Object.entries(breakpoints).map(([key, value]) => {
       const { breakpoint, format } = value;
       if (breakpointSmallerThan(breakpoint, originalDimensions)) {
-        return generateBreakpoint(
-          key,
-          {
-            file,
-            breakpoint,
-            format,
-          },
-          sizeOptimization
-        );
+        return generateBreakpoint(key, {
+          file,
+          breakpoint,
+          format,
+        });
       }
 
       return undefined;
@@ -177,8 +167,7 @@ const generateBreakpoint = async (
     file,
     breakpoint,
     format,
-  }: { file: UploadableFile; breakpoint: number; format: keyof sharp.FormatEnum | null },
-  sizeOptimization: boolean
+  }: { file: UploadableFile; breakpoint: number; format: keyof sharp.FormatEnum | null }
 ) => {
   const newFile = await resizeFileTo(
     file,
@@ -191,8 +180,7 @@ const generateBreakpoint = async (
       name: `${key}_${file.name}`,
       hash: `${key}_${file.hash}`,
     },
-    format,
-    sizeOptimization
+    format
   );
   return {
     key,
@@ -217,9 +205,7 @@ export const optimize = async (file: UploadableFile) => {
       transformer = sharp(file.filepath);
     }
     if (sizeOptimization) {
-      transformer[format](
-        getOptimizeSettings()[format] ?? DEFAULT_OPTIONS[format]
-      );
+      transformer[format](getOptimizeSettings()[format] ?? DEFAULT_OPTIONS[format]);
     }
     if (autoOrientation) {
       transformer.rotate();
